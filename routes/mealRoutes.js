@@ -124,12 +124,10 @@ router.put("/meals/:id", async (req, res) => {
               // Meal updated successfully
               Meal.findByPk(id)
                 .then((updatedMeal) => {
-                  res
-                    .status(200)
-                    .json({
-                      message: "Meal updated successfully",
-                      updatedMeal,
-                    });
+                  res.status(200).json({
+                    message: "Meal updated successfully",
+                    updatedMeal,
+                  });
                 })
                 .catch((err) => {
                   res
@@ -145,6 +143,45 @@ router.put("/meals/:id", async (req, res) => {
             res.status(500).json({ error: "Failed to update meal" });
           });
       }
+    }
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch calories from Nutritionix API" });
+  }
+});
+
+//admin roles
+router.post("/admin/meals", isAdmin, async (req, res) => {
+  // Extract the meal name and time from the request body
+  const { name, time } = req.body;
+
+  try {
+    // Call the Nutritionix API to fetch the calories for the meal
+    const response = await axios.get(
+      `https://api.nutritionix.com/v1_1/search/${name}?results=0:1&fields=item_name,nf_calories&appId=${APP_ID}&appKey=${APP_KEY}`
+    );
+
+    const { hits } = response.data;
+    if (hits && hits.length > 0) {
+      const { fields } = hits[0];
+      if (fields) {
+        const { nf_calories } = fields;
+        // Create a new Meal with the name, time, and calories
+        const meal = await Meal.create({
+          name,
+          time,
+          calories: nf_calories,
+        });
+        res.status(201).json({ message: "Meal added successfully", meal });
+      }
+    } else {
+      // Create a new Meal with the name, time, and default calories
+      const meal = await Meal.create({
+        name,
+        time,
+      });
+      res.status(201).json({ message: "Meal added successfully", meal });
     }
   } catch (error) {
     res
