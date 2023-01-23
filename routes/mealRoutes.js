@@ -60,35 +60,97 @@ router.get("/meals", (req, res) => {
     });
 });
 
-router.put("/meals/:id", (req, res) => {
+// router.put("/meals/:id", (req, res) => {
+//   // Extract the meal ID from the URL
+//   const { id } = req.params;
+
+//   // Extract the updated meal information from the request body
+//   const { name, time } = req.body;
+
+//   try {
+//     // Call the Nutritionix API to fetch the calories for the meal
+//     const response = await axios.get(
+//       `https://api.nutritionix.com/v1_1/search/${name}?results=0:1&fields=item_name,nf_calories&appId=${APP_ID}&appKey=${APP_KEY}`
+//     );
+//     const { hits } = response.data;
+//     if (hits && hits.length > 0) {
+//       const { fields } = hits[0];
+//       if (fields) {
+//         const { nf_calories } = fields;
+//   Meal.update({ name, time, calories:nf_calories }, { where: { id } })
+//     .then((result) => {
+//       if (result[0] === 1) {
+//         // Meal updated successfully
+//         Meal.findByPk(id)
+//           .then((updatedMeal) => {
+//             res
+//               .status(200)
+//               .json({ message: "Meal updated successfully", updatedMeal });
+//           })
+//           .catch((err) => {
+//             res.status(500).json({ error: "Failed to retrieve updated meal" });
+//           });
+//       } else {
+//         // No meals were updated
+//         res.status(404).json({ error: "Meal not found" });
+//       }
+//     })
+//     .catch((error) => {
+//       res.status(500).json({ error: "Failed to update meal" });
+//     });
+// });
+
+router.put("/meals/:id", async (req, res) => {
   // Extract the meal ID from the URL
   const { id } = req.params;
 
   // Extract the updated meal information from the request body
-  const { name, time, calories } = req.body;
+  const { name, time } = req.body;
 
-  // Update the meal in the database
-  Meal.update({ name, time, calories }, { where: { id } })
-    .then((result) => {
-      if (result[0] === 1) {
-        // Meal updated successfully
-        Meal.findByPk(id)
-          .then((updatedMeal) => {
-            res
-              .status(200)
-              .json({ message: "Meal updated successfully", updatedMeal });
+  try {
+    // Call the Nutritionix API to fetch the calories for the meal
+    const response = await axios.get(
+      `https://api.nutritionix.com/v1_1/search/${name}?results=0:1&fields=item_name,nf_calories&appId=${APP_ID}&appKey=${APP_KEY}`
+    );
+    const { hits } = response.data;
+    if (hits && hits.length > 0) {
+      const { fields } = hits[0];
+      if (fields) {
+        const { nf_calories } = fields;
+
+        Meal.update({ name, time, calories: nf_calories }, { where: { id } })
+          .then((result) => {
+            if (result[0] === 1) {
+              // Meal updated successfully
+              Meal.findByPk(id)
+                .then((updatedMeal) => {
+                  res
+                    .status(200)
+                    .json({
+                      message: "Meal updated successfully",
+                      updatedMeal,
+                    });
+                })
+                .catch((err) => {
+                  res
+                    .status(500)
+                    .json({ error: "Failed to retrieve updated meal" });
+                });
+            } else {
+              // No meals were updated
+              res.status(404).json({ error: "Meal not found" });
+            }
           })
-          .catch((err) => {
-            res.status(500).json({ error: "Failed to retrieve updated meal" });
+          .catch((error) => {
+            res.status(500).json({ error: "Failed to update meal" });
           });
-      } else {
-        // No meals were updated
-        res.status(404).json({ error: "Meal not found" });
       }
-    })
-    .catch((error) => {
-      res.status(500).json({ error: "Failed to update meal" });
-    });
+    }
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch calories from Nutritionix API" });
+  }
 });
 
 module.exports = router;
