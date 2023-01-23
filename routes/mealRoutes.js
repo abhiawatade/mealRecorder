@@ -11,7 +11,7 @@ const axios = require("axios");
 const { isAdmin } = require("../middlewares/auth");
 const { isUser } = require("../middlewares/auth");
 
-router.post("/meals", isAuthenticated, async (req, res) => {
+router.post("/meals", async (req, res) => {
   // Extract the meal name and time from the request body
   const { name, time } = req.body;
 
@@ -48,7 +48,7 @@ router.post("/meals", isAuthenticated, async (req, res) => {
       .json({ error: "Failed to fetch calories from Nutritionix API" });
   }
 });
-router.get("/meals", isAuthenticated, (req, res) => {
+router.get("/meals", (req, res) => {
   // Retrieve all meals from the database
   Meal.findAll()
     .then((meals) => {
